@@ -1,2 +1,2 @@
 # SR2-Systeme
-TP SR1 Part System
+TP SR2 Part System
