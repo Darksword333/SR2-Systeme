@@ -11,7 +11,8 @@ int main(int argc, char *argv[]) {
     }
     int NF = atoi(argv[1]);
     int NM = atoi(argv[2]);
-    int pid = 0, status = -1;
+    pid_t pid = 0;
+    int status = -1;
     if (NF <= 0 || NM <= 0) {
         fprintf(stderr, "NF et NM doivent être des entiers positifs\n");
         exit(EXIT_FAILURE);
