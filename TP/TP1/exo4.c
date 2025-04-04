@@ -6,11 +6,18 @@
 #include <signal.h>
 #include "boucler.c"
 
+#define NB_FILS 2
+int compteur_fils[NB_FILS] = {0, 0};
+
 void SigUSR_handler(int sig) {
-    if (sig == SIGUSR1) 
+    if (sig == SIGUSR1) {
         printf(">> SIGUSR1 reçu par %d\n", getpid());
-    else if (sig == SIGUSR2) 
+        compteur_fils[0]++;
+    }
+    else if (sig == SIGUSR2) {
         printf(">> SIGUSR2 reçu par %d\n", getpid());
+        compteur_fils[1]++;
+    }
 }
 
 int main(int argc, char *argv[]){
@@ -20,11 +27,16 @@ int main(int argc, char *argv[]){
     }
     int NB = atoi(argv[1]);
     int nb_lu = 0;
-    int nb = 0;
     int NBMAX = atoi(argv[2]);
     char c;
-    pid_t pid, ppid;
-    struct sigaction act, oldact; // Pour masquer puis demasquer
+    pid_t ppid;
+
+    sigset_t mask;
+    sigfillset(&mask);
+    sigdelset(&mask, SIGUSR1);
+    sigdelset(&mask, SIGUSR2);
+
+    struct sigaction act; // Pour masquer puis demasquer
     act.sa_handler = SigUSR_handler;
     act.sa_flags = 0;
     sigemptyset(&act.sa_mask);
@@ -38,11 +50,13 @@ int main(int argc, char *argv[]){
                 perror("fork");
                 exit(EXIT_FAILURE);
             case 0: // Processus Fils
-                pid = getpid();
                 ppid = getppid();
-                while (nb_lu != NBMAX) {
-                    while (nb != NB) {
-                        nb = scanf("%1c", &c);
+                while (nb_lu < NBMAX) {
+                    for (int j = 0; j < NB; j++) {
+                        if (scanf("%c", &c) == EOF) {
+                            exit(EXIT_SUCCESS);
+                        }
+                        
                     }
                     nb_lu+=NB;
                     printf("%d", nb_lu);
@@ -54,7 +68,10 @@ int main(int argc, char *argv[]){
                 printf(">> %d termine\n", getpid());
                 exit(EXIT_SUCCESS);
             default: // Processus Père
-                sigsuspend(&act.sa_mask);
+                if (sigsuspend(&mask) == -1) {
+                    perror("sigsuspend");
+                    exit(EXIT_FAILURE);
+                }
                 break;
         }
     }
