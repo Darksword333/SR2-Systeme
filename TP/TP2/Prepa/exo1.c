@@ -12,7 +12,7 @@ int main(int argc, char *argv[]){
     }
     int NE = 0; // Init = atoi(argv[1]) mais plus tard pour que le fils ne connaisse pas le nombre
     int tube[2];
-    char *message = malloc(100 * sizeof(char));
+    char *message = malloc(100 * sizeof(char)); // Init message plus tard pour que le fils ne le connaisse pas non plus
     char *buffer = malloc(100 * sizeof(char));
     if (message == NULL || buffer == NULL) {
         perror("malloc");
