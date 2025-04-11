@@ -39,7 +39,10 @@ int main(int argc, char *argv[]){
                             j++;
                             printf("\tCapteur %d (%d) : 1 vehicule de plus => %d\n", i, pid, j);
                         if (cpt == NBV) {
-                            write(tube[1], &i, sizeof(int));
+                            if (write(tube[1], &i, sizeof(int)) == -1) {
+                                perror("write");
+                                exit(EXIT_FAILURE);
+                            }
                             cpt = 0;
                         }
                     }
