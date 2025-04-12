@@ -6,6 +6,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <string.h>
+#include <errno.h>
 #include "../TP1/boucler.c" // Pour la date
 
 volatile sig_atomic_t ecrire = 0;
@@ -31,7 +32,7 @@ int main(int argc, char *argv[]){
     int NBL = atoi(argv[2]);
     NS = atoi(argv[3]);
     int cpt[NF]; // Compteur de vehicules
-    int j = 0;
+    int compteur = 0;
     pid_t pid_fils;
     stop = false;
     int fils = 0;
@@ -66,16 +67,19 @@ int main(int argc, char *argv[]){
                 pid = getpid();
                 alarm(NS); // On lance le timer
                 while (!stop){
+                    errno = 0;
                     c = getchar(); // Fonction bloquante 
-                    if (c != '\n'){
-                            cpt[i]++;
-                            printf("\tCapteur %d (%d) : 1 vehicule de plus => %d\n", i, pid, j);
+                    if (c == EOF && errno == EINTR) {
+                        continue; // interruption par signal donc on réessaie
+                    }
+                    if (c != '\n' && c != EOF) {
+                        compteur++;
+                        printf("\tCapteur %d (%d) : 1 vehicule de plus => %d\n", i, pid, compteur);
                         if (ecrire == 1) {
                             if (write(tube[1], &i, sizeof(int)) == -1 || write(tube[1], &pid, sizeof(pid_t)) == -1) {
                                 perror("write");
                                 exit(EXIT_FAILURE);
                             }
-                            cpt[i] = 0;
                             ecrire = 0; // On ne peut plus écrire
                         }
                     }
@@ -84,6 +88,7 @@ int main(int argc, char *argv[]){
                 printf("\tCapteur %d (%d) : Termine\n", i, pid);
                 exit(EXIT_SUCCESS);
             default: // Process Pere
+                cpt[i] = 0; // Initialisation du compteur
                 // Apres la creation du fils
                 break;
         }
@@ -91,7 +96,9 @@ int main(int argc, char *argv[]){
     close(tube[1]); // Fermeture écriture
     pid = getpid();
     sigprocmask(SIG_BLOCK, &block_sigalrm, NULL);
-    while (read(tube[0], &fils, sizeof(int)) > 0 || read(tube[0], &pid_fils, sizeof(pid_t)) > 0) {
+    while (read(tube[0], &fils, sizeof(int)) > 0) {
+        read(tube[0], &pid_fils, sizeof(pid_t)); // On lit le pid du fils
+        printf("[DEBUG] Pere (%d) - Capteur (%d) : pid du fils = %d\n", pid, fils, pid_fils);
         cpt[fils] += 1;
         printf("Pere (%d) - Capteur (%d) : nombre de vehicules = %d\n", pid, fils, cpt[fils]);
         if (cpt[fils] >= NBL){
