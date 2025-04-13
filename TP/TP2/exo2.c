@@ -74,12 +74,12 @@ int main(int argc, char *argv[]){
                     }
                     if (c != '\n' && c != EOF) {
                         compteur++;
-                        printf("\tCapteur %d (%d) : 1 vehicule de plus => %d\n", i, pid, compteur);
                         if (ecrire == 1) {
-                            if (write(tube[1], &i, sizeof(int)) == -1 || write(tube[1], &pid, sizeof(pid_t)) == -1) {
+                            if (write(tube[1], &i, sizeof(int)) == -1 || write(tube[1], &pid, sizeof(pid_t)) == -1 || write(tube[1], &compteur, sizeof(int)) == -1) {
                                 perror("write");
                                 exit(EXIT_FAILURE);
                             }
+                            printf("\tCapteur %d (%d) : Valeur %d ecrite dans tube a %s\n", i, pid, compteur, date());
                             ecrire = 0; // On ne peut plus écrire
                         }
                     }
@@ -98,8 +98,8 @@ int main(int argc, char *argv[]){
     sigprocmask(SIG_BLOCK, &block_sigalrm, NULL);
     while (read(tube[0], &fils, sizeof(int)) > 0) {
         read(tube[0], &pid_fils, sizeof(pid_t)); // On lit le pid du fils
-        printf("[DEBUG] Pere (%d) - Capteur (%d) : pid du fils = %d\n", pid, fils, pid_fils);
-        cpt[fils] += 1;
+        read(tube[0], &compteur, sizeof(int)); // On lit le compteur du fils
+        cpt[fils] = compteur;
         printf("Pere (%d) - Capteur (%d) : nombre de vehicules = %d\n", pid, fils, cpt[fils]);
         if (cpt[fils] >= NBL){
             kill(pid_fils, SIGTERM); // On tue le fils
@@ -112,5 +112,4 @@ int main(int argc, char *argv[]){
     }
     printf("Pere (%d) - Je me termine en dernier\n", pid);
     exit(EXIT_SUCCESS);
-    return 0;
 }
