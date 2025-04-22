@@ -6,37 +6,40 @@
 #include <string.h>
 #include <errno.h>
 #include <pthread.h>
+#include "file/file.h"
 
-int *tab; // Tableau global
+buffer_t tab[MAX_CHAR]; // Initialisation globale du tableau
 
 void* producteur(void* arg){
     int num = ((int*)arg)[0];
     int nbre = ((int*)arg)[1];
+    char *message = malloc(MAX_CHAR);
     pthread_t id = pthread_self();
-    for (int i = 0; i < nbre; i++){
-        tab[i] = (num*10) + i+1;
-        printf("Prod %d (%ld) : Message depose = Bonjour %d de prod %d\n", num, id, i+1, num);
+    for (int i = 1; i <= nbre; i++){
+        sprintf(message, "Bonjour %d de prod %d\n", i, num); // Création d'un message
+        enfiler_message(tab, message); // Production d'un message
+        printf("Prod %d (%ld) : Message depose = %s\n", num, id, message);
     }
-    pthread_exit(EXIT_SUCCESS); 
+    etat_buffer(tab); // Affichage de l'état du buffer
+    afficher_buffer(tab); // Affichage du buffer
+    pthread_exit(message); 
 }
 
 void* consommateur(void* arg){
     int num = ((int*)arg)[0];
     int nbre = ((int*)arg)[1];
-    int msg = 0, num_prod = 0;
+    char * message = malloc(MAX_CHAR);
     pthread_t id = pthread_self();
     for (int i = 0; i < nbre; i++){
-        msg = tab[i]%10;
-        num_prod = tab[i]/10;
-        tab[i] = 0; // Simule la consommation du message
-        if (msg == 0){
-            printf("\tConso %d (%ld) : Message retire = xxxxx\n", num, id);
+        if (tab->taille_message[tab->tete] == 0){
+            printf("\tConso %d (%ld) : Message retire = xxxxx\n\n", num, id);
         }
         else {
-            printf("\tConso %d (%ld) : Message retire = Bonjour %d de prod %d\n", num, id, msg, num_prod);
+            message = defiler_message(tab); // Consommation d'un message
+            printf("\tConso %d (%ld) : Message retire = %s\n", num, id, message);
         }
     }
-    pthread_exit(EXIT_SUCCESS); 
+    pthread_exit(message); 
 }
 
 int main(int argc, char *argv[]){
@@ -49,11 +52,14 @@ int main(int argc, char *argv[]){
     int nbreP = atoi(argv[3]);
     int nbreC = atoi(argv[4]);
     int N = atoi(argv[5]);
-    tab = malloc(N * sizeof(int));
+    tab->nbre_message = 0;
+    tab->tete = 0;
+    tab->queue = 0;
     if (NP <= 0 || NC <= 0 || nbreP <= 0 || nbreC <= 0 || N <= 0){
         fprintf(stderr, "Error: NP, NC, nbreP, nbreC and N must be positive integers.\n");
         exit(EXIT_FAILURE);
     }
+    void *message;
     pthread_t prods[NP];
     pthread_t consos[NC];
     typedef struct {
@@ -82,18 +88,19 @@ int main(int argc, char *argv[]){
         }
     }
     for (int i = 0; i < NP; i++){ // Attente de la fin des threads producteurs
-        if (pthread_join(prods[i], NULL) != 0){
+        if (pthread_join(prods[i], &message) != 0){
             fprintf(stderr, "Error: pthread_join failed for producer %d\n", i);
             exit(EXIT_FAILURE);
         }
     }
     for (int i = 0; i < NC; i++){ // Attente de la fin des threads consommateurs
-        if (pthread_join(consos[i], NULL) != 0){
+        if (pthread_join(consos[i], &message) != 0){
             fprintf(stderr, "Error: pthread_join failed for consumer %d\n", i);
             exit(EXIT_FAILURE);
         }
     }
+    afficher_buffer(tab); // Affichage des messages restants dans le buffer si il en reste
+    free(message); // Libération de la mémoire allouée pour le message
     printf("Fin de l'exécution du main\n");
-    free(tab);
     return EXIT_SUCCESS;
 }
