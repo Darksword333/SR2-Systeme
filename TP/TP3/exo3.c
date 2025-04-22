@@ -20,8 +20,6 @@ void* producteur(void* arg){
         enfiler_message(tab, message); // Production d'un message
         printf("Prod %d (%ld) : Message depose = %s\n", num, id, message);
     }
-    etat_buffer(tab); // Affichage de l'état du buffer
-    afficher_buffer(tab); // Affichage du buffer
     pthread_exit(message); 
 }
 
@@ -55,6 +53,7 @@ int main(int argc, char *argv[]){
     tab->nbre_message = 0;
     tab->tete = 0;
     tab->queue = 0;
+    tab->taille_totale = 0;
     if (NP <= 0 || NC <= 0 || nbreP <= 0 || nbreC <= 0 || N <= 0){
         fprintf(stderr, "Error: NP, NC, nbreP, nbreC and N must be positive integers.\n");
         exit(EXIT_FAILURE);
@@ -99,6 +98,7 @@ int main(int argc, char *argv[]){
             exit(EXIT_FAILURE);
         }
     }
+    etat_buffer(tab); // Affiche l'état du buffer
     afficher_buffer(tab); // Affichage des messages restants dans le buffer si il en reste
     free(message); // Libération de la mémoire allouée pour le message
     printf("Fin de l'exécution du main\n");
