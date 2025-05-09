@@ -6,13 +6,14 @@
 #include <string.h>
 #include <errno.h>
 #include <pthread.h>
+#include <semaphore.h>
 
 typedef struct {
         int rang;
         int NBM;
         int NBL;
         int NBT;
-        pthread_mutex_t *tab_mutex;
+        sem_t *tab_sem;
     } args_t;
 
 
@@ -45,18 +46,10 @@ void* affichage(void *arg){
             pthread_exit(retour);
         }
     }
+    //détruire sémaphore
     printf("Afficheur %d (%lu), je me termine\n", rang, num);
     pthread_exit(retour);
 }
-
-int consommer_jeton(pthread_mutex_t *mutex){
-    if (pthread_mutex_lock(mutex) != 0){
-        fprintf(stderr, "Error: consommation jeton failed\n");
-        return EXIT_FAILURE;
-    }
-    return EXIT_SUCCESS;
-}
-
 int main(int argc, char *argv[]){
     if (argc != 4){
         fprintf(stderr, "Usage: %s <NBT> <NBM> <NBL>\n", argv[0]);
@@ -69,17 +62,16 @@ int main(int argc, char *argv[]){
         fprintf(stderr, "Error: NBT, NBM and NBL must be positive integers.\n");
         exit(EXIT_FAILURE);
     }
-    pthread_mutex_t tab_mutex[NBT];
-    if (pthread_mutex_init(&tab_mutex[0], NULL) != 0){
-        fprintf(stderr, "Error: pthread_mutex_init failed for mutex 0\n");
+    sem_t tab_sem[NBT];
+    if (sem_init(&tab_sem[0], NULL, 1) != 0){
+        fprintf(stderr, "Error: sem_init failed for semaphore 0\n");
         exit(EXIT_FAILURE);
     }
     for (int i = 1; i < NBT; i++){
-        if (pthread_mutex_init(&tab_mutex[i], NULL) != 0){
-            fprintf(stderr, "Error: pthread_mutex_init failed for mutex %d\n", i);
+        if (sem_init(&tab_sem[i], NULL, 0) != 0){
+            fprintf(stderr, "Error: sem_init failed for semaphore %d\n", i);
             exit(EXIT_FAILURE);
         }
-        consommer_jeton(&tab_mutex[i]);
     }
     pthread_t fils[NBT];
     args_t args[NBT];
@@ -103,7 +95,6 @@ int main(int argc, char *argv[]){
             strerror(errno);
             exit(EXIT_FAILURE);
         }
-        pthread_mutex_destroy(&tab_mutex[i]);
     }
     printf("Fin de l'execution du thread principal\n");
     return 0;
