@@ -60,7 +60,7 @@ int main(int argc, char *argv[]){
     int NT = atoi(argv[1]);
     solde = atoi(argv[2]);
     int NO = atoi(argv[3]);
-    if (NT <= 0 || solde <= 0 || NO <= 0){
+    if (NT <= 0 || solde < 0 || NO <= 0){
         fprintf(stderr, "Error: NT and solde and NO must be positive integers.\n");
         exit(EXIT_FAILURE);
     }
