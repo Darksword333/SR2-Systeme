@@ -82,27 +82,27 @@ int main(int argc, char *argv[]){
     for (int i = 0; i < NC; i++){
         sem_init(&tab_mutex_conso[i], 0, 0); // Initialisation des sémaphores
     }
-    args_t args_np[NP], args_nc[NC];
+    args_t args_p[NP], args_c[NC];
     for (int i = 0; i < NP; i++){ // Initialisation des arguments pour les threads producteurs
-        args_np[i].num = i;
-        args_np[i].nbre = nbreP;
-        args_np[i].mutex_conso = tab_mutex_conso;
-        args_np[i].mutex_prod = tab_mutex_prod;
+        args_p[i].num = i;
+        args_p[i].nbre = nbreP;
+        args_p[i].mutex_conso = tab_mutex_conso;
+        args_p[i].mutex_prod = tab_mutex_prod;
     }
     for (int i = 0; i < NC; i++){ // Initialisation des arguments pour les threads consommateurs
-        args_nc[i].num = i;
-        args_nc[i].nbre = nbreC; 
-        args_nc[i].mutex_conso = tab_mutex_conso;
-        args_nc[i].mutex_prod = tab_mutex_prod;
+        args_c[i].num = i;
+        args_c[i].nbre = nbreC; 
+        args_c[i].mutex_conso = tab_mutex_conso;
+        args_c[i].mutex_prod = tab_mutex_prod;
     }
     for (int i = 0; i < NP; i++){ // Création des threads producteurs
-        if (pthread_create(&prods[i], NULL, producteur, (void*)&args_np[i]) != 0){
+        if (pthread_create(&prods[i], NULL, producteur, (void*)&args_p[i]) != 0){
             fprintf(stderr, "Error: pthread_create failed for producer %d\n", i);
             exit(EXIT_FAILURE);
         }
     }
     for (int i = 0; i < NC; i++){ // Création des threads consommateurs
-        if (pthread_create(&consos[i], NULL, consommateur, (void*)&args_nc[i]) != 0){
+        if (pthread_create(&consos[i], NULL, consommateur, (void*)&args_c[i]) != 0){
             fprintf(stderr, "Error: pthread_create failed for consumer %d\n", i);
             exit(EXIT_FAILURE);
         }
